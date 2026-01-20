@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { getEvolutionStage, getExperiencePercent } from '../utils/evolution';
+import { getProfile } from '../utils/storage';
 
 /**
  * 진화 단계별 캐릭터 표시 컴포넌트
@@ -7,6 +8,7 @@ import { getEvolutionStage, getExperiencePercent } from '../utils/evolution';
 const Character = ({ entryCount }) => {
   const stage = getEvolutionStage(entryCount);
   const experiencePercent = getExperiencePercent(entryCount);
+  const profile = getProfile();
 
   return (
     <div className="flex flex-col items-center space-y-6">
@@ -46,9 +48,9 @@ const Character = ({ entryCount }) => {
             }}
           />
 
-          {/* 이모지 캐릭터 */}
+          {/* 캐릭터 컴포넌트 */}
           <motion.div
-            className="text-8xl z-10"
+            className="w-32 h-32 z-10 flex items-center justify-center"
             animate={{
               y: [0, -10, 0],
             }}
@@ -58,7 +60,7 @@ const Character = ({ entryCount }) => {
               ease: 'easeInOut'
             }}
           >
-            {stage.emoji}
+            {stage.component && <stage.component />}
           </motion.div>
         </div>
 
@@ -80,7 +82,15 @@ const Character = ({ entryCount }) => {
         transition={{ delay: 0.2 }}
         className="text-center"
       >
-        <h2 className="text-2xl font-bold text-textBrown mb-2">{stage.name}</h2>
+        <h2 className="text-2xl font-bold text-textBrown mb-2">
+          {profile.plantName ? (
+            <>
+              {profile.plantName} ({stage.name}) {stage.emoji}
+            </>
+          ) : (
+            stage.name
+          )}
+        </h2>
         <p className="text-gray-600 text-sm px-4">{stage.message}</p>
       </motion.div>
 

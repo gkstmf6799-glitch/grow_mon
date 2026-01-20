@@ -3,6 +3,15 @@
  * 일기 개수에 따라 6단계로 진화하는 로직
  */
 
+import {
+  Level1Egg,
+  Level2Sprout,
+  Level3Plant,
+  Level4Flower,
+  Level5Fruit,
+  Level6Fairy
+} from '../components/characters';
+
 export const EVOLUTION_STAGES = [
   {
     level: 1,
@@ -10,6 +19,7 @@ export const EVOLUTION_STAGES = [
     minEntries: 0,
     maxEntries: 0,
     emoji: '🥚',
+    component: Level1Egg,
     message: '여정의 시작! 첫 일기를 작성해보세요.',
     color: '#E0E0E0'
   },
@@ -19,6 +29,7 @@ export const EVOLUTION_STAGES = [
     minEntries: 1,
     maxEntries: 15,
     emoji: '🌱',
+    component: Level2Sprout,
     message: '작은 새싹이 돋아났어요! 계속 관찰해주세요.',
     color: '#A5D6A7'
   },
@@ -28,6 +39,7 @@ export const EVOLUTION_STAGES = [
     minEntries: 16,
     maxEntries: 35,
     emoji: '🌿',
+    component: Level3Plant,
     message: '튼튼한 줄기와 잎이 자라고 있어요!',
     color: '#66BB6A'
   },
@@ -37,6 +49,7 @@ export const EVOLUTION_STAGES = [
     minEntries: 36,
     maxEntries: 60,
     emoji: '🌸',
+    component: Level4Flower,
     message: '아름다운 꽃이 피었어요! 벌써 절반이 넘었네요.',
     color: '#F48FB1'
   },
@@ -46,6 +59,7 @@ export const EVOLUTION_STAGES = [
     minEntries: 61,
     maxEntries: 85,
     emoji: '🍎',
+    component: Level5Fruit,
     message: '탐스러운 열매가 열렸어요! 거의 다 왔어요.',
     color: '#EF5350'
   },
@@ -55,6 +69,7 @@ export const EVOLUTION_STAGES = [
     minEntries: 86,
     maxEntries: 90,
     emoji: '🧚',
+    component: Level6Fairy,
     message: '축하합니다! 최종 진화 완료! 당신은 진정한 식물 마스터에요!',
     color: '#AB47BC'
   }

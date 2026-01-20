@@ -4,6 +4,7 @@ import Dashboard from './components/Dashboard';
 import CalendarView from './components/CalendarView';
 import EntryForm from './components/EntryForm';
 import Timeline from './components/Timeline';
+import Profile from './components/Profile';
 import BottomNav from './components/BottomNav';
 import EvolutionCelebration from './components/EvolutionCelebration';
 import {
@@ -99,7 +100,11 @@ function App() {
       {/* 페이지 콘텐츠 */}
       <AnimatePresence mode="wait">
         {activeTab === 'home' && (
-          <Dashboard key="home" entryCount={entryCount} />
+          <Dashboard
+            key="home"
+            entryCount={entryCount}
+            onProfileClick={() => setActiveTab('profile')}
+          />
         )}
 
         {activeTab === 'calendar' && (
@@ -125,6 +130,14 @@ function App() {
             key="timeline"
             entries={entries}
             onDelete={handleDeleteEntry}
+          />
+        )}
+
+        {activeTab === 'profile' && (
+          <Profile
+            key="profile"
+            entries={entries}
+            entryCount={entryCount}
           />
         )}
       </AnimatePresence>

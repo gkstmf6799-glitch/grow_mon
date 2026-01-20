@@ -133,7 +133,7 @@ const EvolutionCelebration = ({ show, newStage, onClose }) => {
                 }}
               >
                 <motion.div
-                  className="text-9xl"
+                  className="w-48 h-48 flex items-center justify-center"
                   animate={{
                     scale: [1, 1.2, 1],
                     rotate: [0, 5, -5, 0]
@@ -144,7 +144,7 @@ const EvolutionCelebration = ({ show, newStage, onClose }) => {
                     ease: 'easeInOut'
                   }}
                 >
-                  {newStage.emoji}
+                  {newStage.component && <newStage.component />}
                 </motion.div>
               </div>
               <motion.h3

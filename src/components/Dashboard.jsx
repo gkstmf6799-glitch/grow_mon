@@ -1,13 +1,17 @@
 import { motion } from 'framer-motion';
 import Character from './Character';
 import { getNextStageInfo } from '../utils/evolution';
-import { BookOpen, Calendar, TrendingUp } from 'lucide-react';
+import { getProfile } from '../utils/storage';
+import { getDaysSinceStart } from '../utils/statistics';
+import { BookOpen, Calendar, TrendingUp, User } from 'lucide-react';
 
 /**
  * 메인 대시보드 - 캐릭터 상태와 진행도 표시
  */
-const Dashboard = ({ entryCount }) => {
+const Dashboard = ({ entryCount, onProfileClick }) => {
   const nextStageInfo = getNextStageInfo(entryCount);
+  const profile = getProfile();
+  const daysSinceStart = getDaysSinceStart(profile.startDate);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-green-50 pb-24">
@@ -15,13 +19,32 @@ const Dashboard = ({ entryCount }) => {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white shadow-md border-b-4 border-textBrown px-6 py-4"
+        className="bg-white shadow-md border-b-4 border-textBrown px-6 py-4 relative"
       >
-        <h1 className="text-2xl font-bold text-textBrown text-center">
+        {/* 프로필 아이콘 버튼 */}
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={onProfileClick}
+          className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors"
+          aria-label="프로필"
+        >
+          <User className="w-6 h-6 text-primary" />
+        </motion.button>
+
+        <h1 className="text-2xl font-bold text-textBrown text-center pr-10">
           🌱 그로우몬: 90일의 여정
         </h1>
         <p className="text-sm text-gray-600 text-center mt-1">
-          식물과 함께 성장하는 나의 기록
+          {profile.name && profile.plantName ? (
+            `${profile.name}님의 ${profile.plantName}`
+          ) : profile.name ? (
+            `${profile.name}님의 식물 키우기`
+          ) : profile.plantName ? (
+            `${profile.plantName} 키우기`
+          ) : (
+            '식물과 함께 성장하는 나의 기록'
+          )}
         </p>
       </motion.div>
 
@@ -45,13 +68,13 @@ const Dashboard = ({ entryCount }) => {
             <div className="text-xs text-gray-600 mt-1">일기</div>
           </div>
 
-          {/* 남은 일수 */}
+          {/* 경과 일수 */}
           <div className="bg-white rounded-xl p-4 shadow-lg border-2 border-textBrown text-center">
             <Calendar className="mx-auto mb-2 text-blue-500" size={24} />
             <div className="text-2xl font-bold text-textBrown">
-              {90 - entryCount}
+              {daysSinceStart > 0 ? `D+${daysSinceStart}` : '-'}
             </div>
-            <div className="text-xs text-gray-600 mt-1">남은 일</div>
+            <div className="text-xs text-gray-600 mt-1">경과 일수</div>
           </div>
 
           {/* 다음 진화까지 */}
