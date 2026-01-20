@@ -4,6 +4,7 @@ import { getNextStageInfo } from '../utils/evolution';
 import { getProfile } from '../utils/storage';
 import { getDaysSinceStart } from '../utils/statistics';
 import { BookOpen, Calendar, TrendingUp, User } from 'lucide-react';
+import logoImage from '../assets/grow_mon_logo.png';
 
 /**
  * 메인 대시보드 - 캐릭터 상태와 진행도 표시
@@ -32,20 +33,13 @@ const Dashboard = ({ entryCount, onProfileClick }) => {
           <User className="w-6 h-6 text-primary" />
         </motion.button>
 
-        <h1 className="text-2xl font-bold text-textBrown text-center pr-10">
-          🌱 그로우몬: 90일의 여정
-        </h1>
-        <p className="text-sm text-gray-600 text-center mt-1">
-          {profile.name && profile.plantName ? (
-            `${profile.name}님의 ${profile.plantName}`
-          ) : profile.name ? (
-            `${profile.name}님의 식물 키우기`
-          ) : profile.plantName ? (
-            `${profile.plantName} 키우기`
-          ) : (
-            '식물과 함께 성장하는 나의 기록'
-          )}
-        </p>
+        <div className="text-center pr-10">
+          <img
+            src={logoImage}
+            alt="그로우몬: 90일의 여정"
+            className="h-16 mx-auto"
+          />
+        </div>
       </motion.div>
 
       {/* 캐릭터 섹션 */}
