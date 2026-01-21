@@ -1,30 +1,46 @@
 /**
- * 그로우몬 LocalStorage 유틸리티
- * 90일간의 식물 일기 데이터를 효율적으로 관리합니다.
- *
- * 데이터 구조:
- * {
- *   "2026-01-20": {
- *     date: "2026-01-20",
- *     photo: "data:image/jpeg;base64,...",
- *     content: "오늘 새싹이 조금 더 자랐어요!",
- *     timestamp: 1737331200000
- *   },
- *   ...
- * }
+ * 그로우몬 Supabase Storage 유틸리티
+ * 90일간의 식물 일기 데이터를 Supabase에 저장하고 관리합니다.
  */
 
-const STORAGE_KEY = 'growmon_diary_entries';
-const USER_DATA_KEY = 'growmon_user_data';
-const PROFILE_KEY = 'growmon_user_profile';
+import { supabase } from '../lib/supabase';
+import { uploadPhoto, deletePhoto, isBase64 } from './photoStorage';
 
 /**
  * 모든 일기 항목 가져오기
  */
-export const getAllEntries = () => {
+export const getAllEntries = async () => {
   try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : {};
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new Error('로그인이 필요합니다');
+    }
+
+    const { data, error } = await supabase
+      .from('diary_entries')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('date', { ascending: false });
+
+    if (error) throw error;
+
+    // 데이터를 객체 형태로 변환 (날짜를 키로)
+    const entries = {};
+    data.forEach(entry => {
+      entries[entry.date] = {
+        date: entry.date,
+        photo: entry.photo_url,
+        content: {
+          weather: entry.weather,
+          temperature: entry.temperature,
+          observation: entry.observation
+        },
+        timestamp: new Date(entry.created_at).getTime()
+      };
+    });
+
+    return entries;
   } catch (error) {
     console.error('데이터 로드 실패:', error);
     return {};
@@ -34,26 +50,104 @@ export const getAllEntries = () => {
 /**
  * 특정 날짜의 일기 가져오기
  */
-export const getEntry = (date) => {
-  const entries = getAllEntries();
-  return entries[date] || null;
+export const getEntry = async (date) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new Error('로그인이 필요합니다');
+    }
+
+    const { data, error } = await supabase
+      .from('diary_entries')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('date', date)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // 데이터 없음
+        return null;
+      }
+      throw error;
+    }
+
+    return {
+      date: data.date,
+      photo: data.photo_url,
+      content: {
+        weather: data.weather,
+        temperature: data.temperature,
+        observation: data.observation
+      },
+      timestamp: new Date(data.created_at).getTime()
+    };
+  } catch (error) {
+    console.error('일기 로드 실패:', error);
+    return null;
+  }
 };
 
 /**
  * 일기 저장하기
  */
-export const saveEntry = (date, photo, content) => {
-  const entries = getAllEntries();
-
-  entries[date] = {
-    date,
-    photo,
-    content,
-    timestamp: Date.now()
-  };
-
+export const saveEntry = async (date, photo, content) => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new Error('로그인이 필요합니다');
+    }
+
+    // 기존 데이터 확인
+    const { data: existing } = await supabase
+      .from('diary_entries')
+      .select('id, photo_url')
+      .eq('user_id', user.id)
+      .eq('date', date)
+      .single();
+
+    // 사진 처리: Base64면 Storage에 업로드
+    let photoUrl = photo || '';
+    if (photo && isBase64(photo)) {
+      const uploadedUrl = await uploadPhoto(photo, user.id, date);
+      if (uploadedUrl) {
+        photoUrl = uploadedUrl;
+
+        // 기존 사진이 있으면 삭제
+        if (existing?.photo_url && !isBase64(existing.photo_url)) {
+          await deletePhoto(existing.photo_url);
+        }
+      }
+    }
+
+    const entryData = {
+      user_id: user.id,
+      date,
+      weather: content.weather || '',
+      temperature: content.temperature || '',
+      observation: content.observation || '',
+      photo_url: photoUrl,
+    };
+
+    if (existing) {
+      // 업데이트
+      const { error } = await supabase
+        .from('diary_entries')
+        .update(entryData)
+        .eq('id', existing.id);
+
+      if (error) throw error;
+    } else {
+      // 새로 생성
+      const { error } = await supabase
+        .from('diary_entries')
+        .insert([entryData]);
+
+      if (error) throw error;
+    }
+
     return true;
   } catch (error) {
     console.error('데이터 저장 실패:', error);
@@ -64,12 +158,36 @@ export const saveEntry = (date, photo, content) => {
 /**
  * 일기 삭제하기
  */
-export const deleteEntry = (date) => {
-  const entries = getAllEntries();
-  delete entries[date];
-
+export const deleteEntry = async (date) => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new Error('로그인이 필요합니다');
+    }
+
+    // 삭제 전 사진 URL 가져오기
+    const { data: entry } = await supabase
+      .from('diary_entries')
+      .select('photo_url')
+      .eq('user_id', user.id)
+      .eq('date', date)
+      .single();
+
+    // Storage에서 사진 삭제
+    if (entry?.photo_url && !isBase64(entry.photo_url)) {
+      await deletePhoto(entry.photo_url);
+    }
+
+    // 데이터베이스에서 일기 삭제
+    const { error } = await supabase
+      .from('diary_entries')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('date', date);
+
+    if (error) throw error;
+
     return true;
   } catch (error) {
     console.error('데이터 삭제 실패:', error);
@@ -80,110 +198,196 @@ export const deleteEntry = (date) => {
 /**
  * 총 일기 개수 가져오기
  */
-export const getEntryCount = () => {
-  const entries = getAllEntries();
-  return Object.keys(entries).length;
+export const getEntryCount = async () => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return 0;
+    }
+
+    const { count, error } = await supabase
+      .from('diary_entries')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id);
+
+    if (error) throw error;
+
+    return count || 0;
+  } catch (error) {
+    console.error('일기 개수 조회 실패:', error);
+    return 0;
+  }
 };
 
 /**
  * 날짜순으로 정렬된 일기 배열 가져오기 (최신순)
  */
-export const getEntriesArray = () => {
-  const entries = getAllEntries();
+export const getEntriesArray = async () => {
+  const entries = await getAllEntries();
   return Object.values(entries).sort((a, b) => b.timestamp - a.timestamp);
 };
 
 /**
  * 특정 월의 일기 가져오기
  */
-export const getEntriesByMonth = (year, month) => {
-  const entries = getAllEntries();
-  const monthStr = `${year}-${String(month).padStart(2, '0')}`;
-
-  return Object.entries(entries)
-    .filter(([date]) => date.startsWith(monthStr))
-    .reduce((acc, [date, entry]) => {
-      acc[date] = entry;
-      return acc;
-    }, {});
-};
-
-/**
- * 사용자 시작 날짜 저장/불러오기
- */
-export const getUserData = () => {
+export const getEntriesByMonth = async (year, month) => {
   try {
-    const data = localStorage.getItem(USER_DATA_KEY);
-    return data ? JSON.parse(data) : { startDate: null };
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return {};
+    }
+
+    const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+
+    const { data, error } = await supabase
+      .from('diary_entries')
+      .select('*')
+      .eq('user_id', user.id)
+      .gte('date', `${monthStr}-01`)
+      .lte('date', `${monthStr}-31`)
+      .order('date', { ascending: false });
+
+    if (error) throw error;
+
+    const entries = {};
+    data.forEach(entry => {
+      entries[entry.date] = {
+        date: entry.date,
+        photo: entry.photo_url,
+        content: {
+          weather: entry.weather,
+          temperature: entry.temperature,
+          observation: entry.observation
+        },
+        timestamp: new Date(entry.created_at).getTime()
+      };
+    });
+
+    return entries;
   } catch (error) {
-    console.error('사용자 데이터 로드 실패:', error);
-    return { startDate: null };
+    console.error('월별 데이터 로드 실패:', error);
+    return {};
   }
-};
-
-export const setStartDate = (date) => {
-  const userData = getUserData();
-  userData.startDate = date;
-
-  try {
-    localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
-    return true;
-  } catch (error) {
-    console.error('시작 날짜 저장 실패:', error);
-    return false;
-  }
-};
-
-/**
- * 모든 데이터 초기화 (주의!)
- */
-export const clearAllData = () => {
-  if (confirm('정말로 모든 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(USER_DATA_KEY);
-    localStorage.removeItem(PROFILE_KEY);
-    return true;
-  }
-  return false;
 };
 
 /**
  * 프로필 데이터 가져오기
  */
-export const getProfile = () => {
+export const getProfile = async () => {
   try {
-    const data = localStorage.getItem(PROFILE_KEY);
-    return data ? JSON.parse(data) : {
-      name: '',
-      avatar: null,
-      grade: null,
-      plantName: '',
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return getDefaultProfile();
+    }
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // 프로필 없음 - 기본값 반환
+        return getDefaultProfile();
+      }
+      throw error;
+    }
+
+    return {
+      name: data.name || '',
+      avatar: data.avatar || null,
+      grade: data.grade || null,
+      plantName: data.plant_name || '',
       plantType: '',
-      startDate: null,
+      startDate: data.start_date || null,
+      school: data.school || '',
+      classNumber: data.class_number || null,
       notificationTime: '20:00',
       notificationEnabled: false
     };
   } catch (error) {
-    console.error('프로필 데이터 로드 실패:', error);
-    return {
-      name: '',
-      avatar: null,
-      grade: null,
-      plantName: '',
-      plantType: '',
-      startDate: null,
-      notificationTime: '20:00',
-      notificationEnabled: false
-    };
+    console.error('프로필 로드 실패:', error);
+    return getDefaultProfile();
   }
 };
+
+const getDefaultProfile = () => ({
+  name: '',
+  avatar: null,
+  grade: null,
+  plantName: '',
+  plantType: '',
+  startDate: null,
+  school: '',
+  classNumber: null,
+  notificationTime: '20:00',
+  notificationEnabled: false
+});
 
 /**
  * 프로필 데이터 저장하기
  */
-export const saveProfile = (profileData) => {
+export const saveProfile = async (profileData) => {
   try {
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(profileData));
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new Error('로그인이 필요합니다');
+    }
+
+    // 기존 프로필 확인
+    const { data: existing } = await supabase
+      .from('profiles')
+      .select('id, avatar')
+      .eq('user_id', user.id)
+      .single();
+
+    // 아바타 사진 처리: Base64면 Storage에 업로드
+    let avatarUrl = profileData.avatar || null;
+    if (profileData.avatar && isBase64(profileData.avatar)) {
+      const uploadedUrl = await uploadPhoto(profileData.avatar, user.id, 'avatar');
+      if (uploadedUrl) {
+        avatarUrl = uploadedUrl;
+
+        // 기존 아바타가 있으면 삭제
+        if (existing?.avatar && !isBase64(existing.avatar)) {
+          await deletePhoto(existing.avatar);
+        }
+      }
+    }
+
+    const dbProfile = {
+      user_id: user.id,
+      name: profileData.name || '',
+      plant_name: profileData.plantName || '',
+      avatar: avatarUrl,
+      school: profileData.school || '',
+      grade: profileData.grade || null,
+      class_number: profileData.classNumber || null,
+      start_date: profileData.startDate || null,
+    };
+
+    if (existing) {
+      // 업데이트
+      const { error } = await supabase
+        .from('profiles')
+        .update(dbProfile)
+        .eq('id', existing.id);
+
+      if (error) throw error;
+    } else {
+      // 새로 생성
+      const { error } = await supabase
+        .from('profiles')
+        .insert([dbProfile]);
+
+      if (error) throw error;
+    }
+
     return true;
   } catch (error) {
     console.error('프로필 저장 실패:', error);
@@ -194,70 +398,66 @@ export const saveProfile = (profileData) => {
 /**
  * 프로필 특정 필드 업데이트
  */
-export const updateProfileField = (field, value) => {
-  const profile = getProfile();
+export const updateProfileField = async (field, value) => {
+  const profile = await getProfile();
   profile[field] = value;
-  return saveProfile(profile);
+  return await saveProfile(profile);
 };
 
 /**
- * 모든 데이터 백업 (JSON 다운로드)
+ * 사용자 데이터 (하위 호환성)
+ */
+export const getUserData = async () => {
+  const profile = await getProfile();
+  return { startDate: profile.startDate };
+};
+
+export const setStartDate = async (date) => {
+  return await updateProfileField('startDate', date);
+};
+
+/**
+ * 모든 데이터 초기화 (주의!)
+ */
+export const clearAllData = async () => {
+  if (confirm('정말로 모든 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        throw new Error('로그인이 필요합니다');
+      }
+
+      // 모든 일기 삭제
+      await supabase
+        .from('diary_entries')
+        .delete()
+        .eq('user_id', user.id);
+
+      // 프로필 삭제
+      await supabase
+        .from('profiles')
+        .delete()
+        .eq('user_id', user.id);
+
+      return true;
+    } catch (error) {
+      console.error('데이터 초기화 실패:', error);
+      return false;
+    }
+  }
+  return false;
+};
+
+/**
+ * 데이터 백업/복원 기능은 현재 미지원
  */
 export const exportData = () => {
-  const data = {
-    entries: getAllEntries(),
-    userData: getUserData(),
-    profile: getProfile(),
-    exportDate: new Date().toISOString()
-  };
-
-  const dataStr = JSON.stringify(data, null, 2);
-  const dataBlob = new Blob([dataStr], { type: 'application/json' });
-  const url = URL.createObjectURL(dataBlob);
-
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `growmon_backup_${new Date().toISOString().split('T')[0]}.json`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-
-  return true;
+  alert('Supabase 버전에서는 데이터가 서버에 안전하게 저장됩니다.');
+  return false;
 };
 
-/**
- * 데이터 복원 (JSON 업로드)
- */
-export const importData = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = (e) => {
-      try {
-        const data = JSON.parse(e.target.result);
-
-        // 데이터 유효성 검사
-        if (!data.entries || !data.userData || !data.profile) {
-          reject(new Error('잘못된 백업 파일 형식입니다.'));
-          return;
-        }
-
-        // 데이터 복원
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data.entries));
-        localStorage.setItem(USER_DATA_KEY, JSON.stringify(data.userData));
-        localStorage.setItem(PROFILE_KEY, JSON.stringify(data.profile));
-
-        resolve(true);
-      } catch (error) {
-        reject(error);
-      }
-    };
-
-    reader.onerror = () => {
-      reject(new Error('파일 읽기 실패'));
-    };
-
-    reader.readAsText(file);
-  });
+export const importData = () => {
+  alert('Supabase 버전에서는 데이터 가져오기가 지원되지 않습니다.');
+  return Promise.reject(new Error('Not supported'));
 };

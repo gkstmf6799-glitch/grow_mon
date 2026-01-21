@@ -14,10 +14,12 @@ import {
   Trash2,
   Bell,
   BellOff,
-  Save
+  Save,
+  LogOut
 } from 'lucide-react';
 import { getProfile, saveProfile, exportData, importData, clearAllData } from '../utils/storage';
 import { getEvolutionStage } from '../utils/evolution';
+import { supabase } from '../lib/supabase';
 import {
   calculateStreak,
   getMostActiveDay,
@@ -51,9 +53,12 @@ function Profile({ entries, entryCount }) {
 
   // 프로필 데이터 로드
   useEffect(() => {
-    const loadedProfile = getProfile();
-    setProfile(loadedProfile);
-    setEditedProfile(loadedProfile);
+    const loadProfile = async () => {
+      const loadedProfile = await getProfile();
+      setProfile(loadedProfile);
+      setEditedProfile(loadedProfile);
+    };
+    loadProfile();
   }, []);
 
   // 통계 데이터 계산
@@ -66,14 +71,22 @@ function Profile({ entries, entryCount }) {
   const weeklyTrend = getWeeklyTrend(entries);
 
   // 프로필 저장
-  const handleSaveProfile = () => {
-    const success = saveProfile(editedProfile);
+  const handleSaveProfile = async () => {
+    const success = await saveProfile(editedProfile);
     if (success) {
       setProfile(editedProfile);
       setIsEditing(false);
       alert('프로필이 저장되었습니다! 🎉');
     } else {
       alert('프로필 저장에 실패했습니다.');
+    }
+  };
+
+  // 로그아웃
+  const handleLogout = async () => {
+    if (confirm('정말 로그아웃하시겠습니까?')) {
+      await supabase.auth.signOut();
+      window.location.reload();
     }
   };
 
@@ -127,8 +140,8 @@ function Profile({ entries, entryCount }) {
   };
 
   // 모든 데이터 초기화
-  const handleClearAll = () => {
-    if (clearAllData()) {
+  const handleClearAll = async () => {
+    if (await clearAllData()) {
       alert('모든 데이터가 삭제되었습니다.\n페이지를 새로고침합니다.');
       window.location.reload();
     }
@@ -496,6 +509,20 @@ function Profile({ entries, entryCount }) {
               onChange={handleImportData}
               className="hidden"
             />
+
+            {/* 로그아웃 */}
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <LogOut className="w-5 h-5 text-gray-600" />
+                <div className="text-left">
+                  <p className="font-medium text-textBrown">로그아웃</p>
+                  <p className="text-sm text-gray-500">현재 계정에서 로그아웃합니다</p>
+                </div>
+              </div>
+            </button>
 
             {/* 모든 데이터 초기화 */}
             <button
