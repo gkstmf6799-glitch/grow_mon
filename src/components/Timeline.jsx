@@ -92,8 +92,15 @@ const Timeline = ({ entries, onDelete }) => {
                       </div>
 
                       {/* 일기 내용 */}
+                      {entry.content?.weather && (
+                        <p className="text-sm text-gray-500 mb-2">
+                          날씨: {entry.content.weather} {entry.content.temperature && `| ${entry.content.temperature}`}
+                        </p>
+                      )}
                       <p className="text-textBrown leading-relaxed whitespace-pre-wrap mb-4">
-                        {entry.content}
+                        {typeof entry.content === 'string'
+                          ? entry.content
+                          : entry.content?.observation || ''}
                       </p>
 
                       {/* 삭제 버튼 */}
