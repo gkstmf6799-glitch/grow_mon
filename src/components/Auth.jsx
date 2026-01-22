@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabase';
+import logoImage from '../assets/grow_mon_logo.png';
 
 const Auth = ({ onAuthSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
@@ -58,7 +59,10 @@ const Auth = ({ onAuthSuccess }) => {
       >
         {/* 로고 */}
         <div className="text-center mb-8">
-          <motion.div
+          <motion.img
+            src={logoImage}
+            alt="그로우몬"
+            className="h-24 mx-auto"
             animate={{
               y: [0, -10, 0],
             }}
@@ -67,12 +71,7 @@ const Auth = ({ onAuthSuccess }) => {
               repeat: Infinity,
               ease: 'easeInOut'
             }}
-            className="text-6xl mb-4"
-          >
-            🌱
-          </motion.div>
-          <h1 className="text-3xl font-bold text-primary mb-2">그로우몬</h1>
-          <p className="text-textBrown/70">90일의 성장 여정</p>
+          />
         </div>
 
         {/* 탭 전환 */}
