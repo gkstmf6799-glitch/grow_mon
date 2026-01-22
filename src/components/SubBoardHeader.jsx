@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, MoreVertical, Home, Calendar, PenSquare, BookOpen, User, X } from 'lucide-react';
+import { ArrowLeft, MoreVertical, Home, Calendar, PenSquare, BookOpen, User, Users, X } from 'lucide-react';
 
 /**
  * 서브보드 공통 헤더
@@ -16,6 +16,7 @@ const SubBoardHeader = ({ title, currentTab, onBack, onNavigate }) => {
     { id: 'calendar', title: '캘린더', icon: Calendar, color: 'text-blue-600' },
     { id: 'write', title: '작성', icon: PenSquare, color: 'text-orange-500' },
     { id: 'timeline', title: '타임라인', icon: BookOpen, color: 'text-purple-600' },
+    { id: 'feed', title: '우리반', icon: Users, color: 'text-pink-600' },
     { id: 'profile', title: '프로필', icon: User, color: 'text-gray-600' },
   ];
 

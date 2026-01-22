@@ -15,7 +15,8 @@ import {
   Bell,
   BellOff,
   Save,
-  LogOut
+  LogOut,
+  Shield
 } from 'lucide-react';
 import { getProfile, saveProfile, exportData, importData, clearAllData } from '../utils/storage';
 import { getEvolutionStage } from '../utils/evolution';
@@ -34,7 +35,7 @@ import { ko } from 'date-fns/locale';
 /**
  * 프로필 페이지 컴포넌트
  */
-function Profile({ entries, entryCount }) {
+function Profile({ entries, entryCount, onNavigate }) {
   const [profile, setProfile] = useState({
     name: '',
     avatar: null,
@@ -266,6 +267,30 @@ function Profile({ entries, entryCount }) {
                     {profile.grade ? `초등 ${profile.grade}학년` : '학년을 설정해주세요'}
                   </p>
                 )}
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">역할</label>
+                <div className="flex items-center gap-2">
+                  <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold ${
+                    profile.role === 'admin' ? 'bg-red-100 text-red-700' :
+                    profile.role === 'teacher' ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-green-100 text-green-700'
+                  }`}>
+                    {profile.role === 'admin' && <Shield className="w-3 h-3" />}
+                    {profile.role === 'admin' && '관리자'}
+                    {profile.role === 'teacher' && '교사'}
+                    {profile.role === 'student' && '학생'}
+                  </span>
+                  {profile.role === 'admin' && onNavigate && (
+                    <button
+                      onClick={() => onNavigate('admin')}
+                      className="text-xs text-red-600 hover:underline"
+                    >
+                      관리자 패널
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>

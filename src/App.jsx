@@ -8,6 +8,9 @@ import CalendarView from './components/CalendarView';
 import EntryForm from './components/EntryForm';
 import Timeline from './components/Timeline';
 import Profile from './components/Profile';
+import ClassFeed from './components/ClassFeed';
+import ClassManager from './components/ClassManager';
+import AdminPanel from './components/AdminPanel';
 import SubBoardHeader from './components/SubBoardHeader';
 import EvolutionCelebration from './components/EvolutionCelebration';
 import {
@@ -140,14 +143,15 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* 서브보드 헤더 - 메인보드가 아닐 때만 표시 */}
-      {activeTab !== 'main' && (
+      {/* 서브보드 헤더 - 메인보드가 아닐 때만 표시 (반관리/관리자패널은 자체 헤더 사용) */}
+      {activeTab !== 'main' && activeTab !== 'classmanager' && activeTab !== 'admin' && (
         <SubBoardHeader
           title={
             activeTab === 'home' ? '홈' :
             activeTab === 'calendar' ? '캘린더' :
             activeTab === 'write' ? '작성' :
             activeTab === 'timeline' ? '타임라인' :
+            activeTab === 'feed' ? '우리반 피드' :
             activeTab === 'profile' ? '프로필' : ''
           }
           currentTab={activeTab}
@@ -205,6 +209,28 @@ function App() {
             key="profile"
             entries={entries}
             entryCount={entryCount}
+            onNavigate={handleTabChange}
+          />
+        )}
+
+        {activeTab === 'feed' && (
+          <ClassFeed
+            key="feed"
+            onManageClass={() => setActiveTab('classmanager')}
+          />
+        )}
+
+        {activeTab === 'classmanager' && (
+          <ClassManager
+            key="classmanager"
+            onBack={() => setActiveTab('feed')}
+          />
+        )}
+
+        {activeTab === 'admin' && (
+          <AdminPanel
+            key="admin"
+            onBack={() => setActiveTab('profile')}
           />
         )}
       </AnimatePresence>

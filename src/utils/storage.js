@@ -306,6 +306,7 @@ export const getProfile = async () => {
       startDate: data.start_date || null,
       school: data.school || '',
       classNumber: data.class_number || null,
+      role: data.role || 'student',
       notificationTime: '20:00',
       notificationEnabled: false
     };
@@ -324,6 +325,7 @@ const getDefaultProfile = () => ({
   startDate: null,
   school: '',
   classNumber: null,
+  role: 'student',
   notificationTime: '20:00',
   notificationEnabled: false
 });
@@ -460,4 +462,71 @@ export const exportData = () => {
 export const importData = () => {
   alert('Supabase 버전에서는 데이터 가져오기가 지원되지 않습니다.');
   return Promise.reject(new Error('Not supported'));
+};
+
+/**
+ * 사용자 역할(role) 가져오기
+ */
+export const getUserRole = async () => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return 'student'; // 기본값
+    }
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single();
+
+    if (error) {
+      console.error('역할 조회 실패:', error);
+      return 'student';
+    }
+
+    return data?.role || 'student';
+  } catch (error) {
+    console.error('역할 조회 실패:', error);
+    return 'student';
+  }
+};
+
+/**
+ * 모든 사용자 목록 가져오기 (관리자 전용)
+ */
+export const getAllUsers = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, user_id, name, school, grade, class_number, role, created_at')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return data || [];
+  } catch (error) {
+    console.error('사용자 목록 조회 실패:', error);
+    return [];
+  }
+};
+
+/**
+ * 사용자 역할 변경 (관리자 전용)
+ */
+export const updateUserRole = async (userId, newRole) => {
+  try {
+    const { error } = await supabase.rpc('update_user_role', {
+      target_user_id: userId,
+      new_role: newRole
+    });
+
+    if (error) throw error;
+
+    return { success: true };
+  } catch (error) {
+    console.error('역할 변경 실패:', error);
+    return { success: false, error: error.message };
+  }
 };

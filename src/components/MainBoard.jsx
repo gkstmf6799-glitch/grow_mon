@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Home, Calendar, PenSquare, BookOpen } from 'lucide-react';
+import { Home, Calendar, PenSquare, BookOpen, Users } from 'lucide-react';
 import logoImage from '../assets/grow_mon_logo.png';
 
 /**
@@ -39,6 +39,14 @@ const MainBoard = ({ onNavigate, entryCount }) => {
       icon: BookOpen,
       color: 'from-purple-400 to-purple-600',
       emoji: '📚',
+    },
+    {
+      id: 'feed',
+      title: '우리반',
+      description: '친구들의 일기 구경하기',
+      icon: Users,
+      color: 'from-pink-400 to-rose-500',
+      emoji: '👫',
     },
   ];
 
