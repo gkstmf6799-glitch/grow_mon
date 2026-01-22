@@ -62,7 +62,7 @@ const Auth = ({ onAuthSuccess }) => {
           <motion.img
             src={logoImage}
             alt="그로우몬"
-            className="h-24 mx-auto"
+            className="h-36 mx-auto"
             animate={{
               y: [0, -10, 0],
             }}
@@ -72,36 +72,6 @@ const Auth = ({ onAuthSuccess }) => {
               ease: 'easeInOut'
             }}
           />
-        </div>
-
-        {/* 탭 전환 */}
-        <div className="flex gap-2 mb-6">
-          <button
-            onClick={() => {
-              setIsLogin(true);
-              setError('');
-            }}
-            className={`flex-1 py-3 rounded-xl font-semibold transition-all ${
-              isLogin
-                ? 'bg-primary text-white'
-                : 'bg-gray-100 text-gray-600'
-            }`}
-          >
-            로그인
-          </button>
-          <button
-            onClick={() => {
-              setIsLogin(false);
-              setError('');
-            }}
-            className={`flex-1 py-3 rounded-xl font-semibold transition-all ${
-              !isLogin
-                ? 'bg-primary text-white'
-                : 'bg-gray-100 text-gray-600'
-            }`}
-          >
-            회원가입
-          </button>
         </div>
 
         {/* 폼 */}
@@ -159,9 +129,27 @@ const Auth = ({ onAuthSuccess }) => {
         {/* 안내 메시지 */}
         <div className="mt-6 text-center text-sm text-textBrown/60">
           {isLogin ? (
-            <p>계정이 없으신가요? 회원가입 탭을 클릭하세요.</p>
+            <p>
+              계정이 없으신가요?{' '}
+              <button
+                type="button"
+                onClick={() => { setIsLogin(false); setError(''); }}
+                className="text-primary font-semibold hover:underline"
+              >
+                회원가입
+              </button>
+            </p>
           ) : (
-            <p>이미 계정이 있으신가요? 로그인 탭을 클릭하세요.</p>
+            <p>
+              이미 계정이 있으신가요?{' '}
+              <button
+                type="button"
+                onClick={() => { setIsLogin(true); setError(''); }}
+                className="text-primary font-semibold hover:underline"
+              >
+                로그인
+              </button>
+            </p>
           )}
         </div>
       </motion.div>
