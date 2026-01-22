@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { supabase } from './lib/supabase';
 import Auth from './components/Auth';
+import MainBoard from './components/MainBoard';
 import Dashboard from './components/Dashboard';
 import CalendarView from './components/CalendarView';
 import EntryForm from './components/EntryForm';
 import Timeline from './components/Timeline';
 import Profile from './components/Profile';
-import BottomNav from './components/BottomNav';
+import SubBoardHeader from './components/SubBoardHeader';
 import EvolutionCelebration from './components/EvolutionCelebration';
 import {
   getAllEntries,
@@ -25,7 +26,7 @@ import { format } from 'date-fns';
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState('main');
   const [entries, setEntries] = useState({});
   const [entryCount, setEntryCount] = useState(0);
   const [selectedDate, setSelectedDate] = useState(null);
@@ -139,8 +140,32 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* 서브보드 헤더 - 메인보드가 아닐 때만 표시 */}
+      {activeTab !== 'main' && (
+        <SubBoardHeader
+          title={
+            activeTab === 'home' ? '홈' :
+            activeTab === 'calendar' ? '캘린더' :
+            activeTab === 'write' ? '작성' :
+            activeTab === 'timeline' ? '타임라인' :
+            activeTab === 'profile' ? '프로필' : ''
+          }
+          currentTab={activeTab}
+          onBack={() => setActiveTab('main')}
+          onNavigate={handleTabChange}
+        />
+      )}
+
       {/* 페이지 콘텐츠 */}
       <AnimatePresence mode="wait">
+        {activeTab === 'main' && (
+          <MainBoard
+            key="main"
+            entryCount={entryCount}
+            onNavigate={handleTabChange}
+          />
+        )}
+
         {activeTab === 'home' && (
           <Dashboard
             key="home"
@@ -163,7 +188,7 @@ function App() {
             initialDate={selectedDate}
             existingEntry={selectedDate ? entries[format(selectedDate, 'yyyy-MM-dd')] : null}
             onSave={handleSaveEntry}
-            onCancel={() => setActiveTab('home')}
+            onCancel={() => setActiveTab('main')}
           />
         )}
 
@@ -183,9 +208,6 @@ function App() {
           />
         )}
       </AnimatePresence>
-
-      {/* 하단 네비게이션 */}
-      <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
 
       {/* 진화 축하 모달 */}
       <EvolutionCelebration
