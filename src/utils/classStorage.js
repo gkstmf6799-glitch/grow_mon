@@ -308,3 +308,192 @@ export const getClassMembers = async () => {
     return [];
   }
 };
+
+// ==================== 관리자용 함수 ====================
+
+/**
+ * 모든 학급 목록 조회 (관리자용)
+ */
+export const getAllClasses = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('classes')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    // 각 학급의 멤버 수 조회
+    const classesWithCount = await Promise.all(
+      (data || []).map(async (cls) => {
+        const { count } = await supabase
+          .from('class_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('class_id', cls.id);
+        return { ...cls, memberCount: count || 0 };
+      })
+    );
+
+    return classesWithCount;
+  } catch (error) {
+    console.error('학급 목록 조회 실패:', error);
+    return [];
+  }
+};
+
+/**
+ * 특정 학급의 멤버 목록 조회 (관리자용)
+ */
+export const getClassMembersById = async (classId) => {
+  try {
+    const { data, error } = await supabase
+      .from('class_members')
+      .select(`
+        id,
+        user_id,
+        role,
+        joined_at
+      `)
+      .eq('class_id', classId)
+      .order('joined_at', { ascending: true });
+
+    if (error) throw error;
+
+    // 프로필 정보 별도 조회
+    const membersWithProfiles = await Promise.all(
+      (data || []).map(async (member) => {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('name, plant_name, avatar')
+          .eq('id', member.user_id)
+          .single();
+        return { ...member, profile: profile || {} };
+      })
+    );
+
+    return membersWithProfiles;
+  } catch (error) {
+    console.error('학급 멤버 조회 실패:', error);
+    return [];
+  }
+};
+
+/**
+ * 학생을 학급에 추가 (관리자용)
+ */
+export const addUserToClass = async (userId, classId) => {
+  try {
+    // 이미 가입되어 있는지 확인
+    const { data: existing } = await supabase
+      .from('class_members')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('class_id', classId)
+      .single();
+
+    if (existing) {
+      throw new Error('이미 해당 학급에 가입되어 있습니다');
+    }
+
+    // 다른 학급에 가입되어 있으면 탈퇴
+    await supabase
+      .from('class_members')
+      .delete()
+      .eq('user_id', userId);
+
+    // 새 학급에 추가
+    const { error } = await supabase
+      .from('class_members')
+      .insert({
+        class_id: classId,
+        user_id: userId,
+        role: 'student',
+      });
+
+    if (error) throw error;
+
+    return { success: true };
+  } catch (error) {
+    console.error('학급 추가 실패:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * 학생을 학급에서 제거 (관리자용)
+ */
+export const removeUserFromClass = async (userId, classId) => {
+  try {
+    const { error } = await supabase
+      .from('class_members')
+      .delete()
+      .eq('user_id', userId)
+      .eq('class_id', classId);
+
+    if (error) throw error;
+
+    return { success: true };
+  } catch (error) {
+    console.error('학급 제거 실패:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * 학급에 속하지 않은 사용자 목록 조회 (관리자용)
+ */
+export const getUsersWithoutClass = async () => {
+  try {
+    // 모든 프로필 조회
+    const { data: allProfiles } = await supabase
+      .from('profiles')
+      .select('id, name, role')
+      .order('created_at', { ascending: false });
+
+    // 학급에 속한 사용자 ID 조회
+    const { data: members } = await supabase
+      .from('class_members')
+      .select('user_id');
+
+    const memberIds = (members || []).map(m => m.user_id);
+
+    // 학급에 속하지 않은 사용자 필터링
+    const usersWithoutClass = (allProfiles || []).filter(
+      p => !memberIds.includes(p.id)
+    );
+
+    return usersWithoutClass;
+  } catch (error) {
+    console.error('미배정 사용자 조회 실패:', error);
+    return [];
+  }
+};
+
+/**
+ * 사용자의 소속 학급 정보 조회
+ */
+export const getUserClassInfo = async (userId) => {
+  try {
+    const { data, error } = await supabase
+      .from('class_members')
+      .select(`
+        role,
+        classes (
+          id,
+          name,
+          code,
+          school,
+          grade,
+          class_number
+        )
+      `)
+      .eq('user_id', userId)
+      .single();
+
+    if (error || !data) return null;
+
+    return data.classes;
+  } catch (error) {
+    return null;
+  }
+};
