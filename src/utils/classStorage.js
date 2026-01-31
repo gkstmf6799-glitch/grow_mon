@@ -359,13 +359,13 @@ export const getClassMembersById = async (classId) => {
 
     if (error) throw error;
 
-    // 프로필 정보 별도 조회
+    // 프로필 정보 별도 조회 (user_id로 조회)
     const membersWithProfiles = await Promise.all(
       (data || []).map(async (member) => {
         const { data: profile } = await supabase
           .from('profiles')
           .select('name, plant_name, avatar')
-          .eq('id', member.user_id)
+          .eq('user_id', member.user_id)
           .single();
         return { ...member, profile: profile || {} };
       })
@@ -444,10 +444,10 @@ export const removeUserFromClass = async (userId, classId) => {
  */
 export const getUsersWithoutClass = async () => {
   try {
-    // 모든 프로필 조회
+    // 모든 프로필 조회 (user_id 포함)
     const { data: allProfiles } = await supabase
       .from('profiles')
-      .select('id, name, role')
+      .select('id, user_id, name, role')
       .order('created_at', { ascending: false });
 
     // 학급에 속한 사용자 ID 조회
@@ -457,9 +457,9 @@ export const getUsersWithoutClass = async () => {
 
     const memberIds = (members || []).map(m => m.user_id);
 
-    // 학급에 속하지 않은 사용자 필터링
+    // 학급에 속하지 않은 사용자 필터링 (user_id로 비교)
     const usersWithoutClass = (allProfiles || []).filter(
-      p => !memberIds.includes(p.id)
+      p => !memberIds.includes(p.user_id)
     );
 
     return usersWithoutClass;

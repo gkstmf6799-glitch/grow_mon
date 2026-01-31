@@ -191,15 +191,6 @@ const AdminPanel = ({ onBack }) => {
     }
   };
 
-  const getRoleIcon = (role) => {
-    switch (role) {
-      case 'admin': return Shield;
-      case 'teacher': return GraduationCap;
-      case 'student': return User;
-      default: return User;
-    }
-  };
-
   // 관리자가 아닌 경우
   if (!loading && !isAdmin) {
     return (
@@ -345,7 +336,7 @@ const AdminPanel = ({ onBack }) => {
               </motion.div>
             </div>
 
-            {/* 사용자 목록 */}
+            {/* 사용자 목록 - 테이블 형식 */}
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
               <div className="p-4 border-b bg-gray-50">
                 <h3 className="font-bold text-textBrown">사용자 목록</h3>
@@ -362,43 +353,57 @@ const AdminPanel = ({ onBack }) => {
                   <p className="text-gray-600">사용자가 없습니다</p>
                 </div>
               ) : (
-                <div className="max-h-[400px] overflow-y-auto">
-                  {users.map((user, index) => {
-                    const RoleIcon = getRoleIcon(user.role);
-
-                    return (
-                      <motion.div
-                        key={user.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.03 }}
-                        className="p-4 border-b hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <RoleIcon size={16} className="text-gray-500" />
-                              <p className="font-semibold text-textBrown">
-                                {user.name || '이름 없음'}
-                              </p>
-                            </div>
-                            <div className="text-xs text-gray-600">
-                              {user.school && `${user.school} `}
-                              {user.grade && `${user.grade}학년 `}
-                              {user.class_number && `${user.class_number}반`}
-                            </div>
-                            <div className="text-xs text-gray-400 mt-1">
-                              가입: {new Date(user.created_at).toLocaleDateString()}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRoleColor(user.role)}`}>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-100 sticky top-0">
+                      <tr>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-700">학년</th>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-700">반</th>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-700">번호</th>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-700">이름</th>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-700">배정학급</th>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-700">역할</th>
+                        <th className="px-4 py-3 text-center font-semibold text-gray-700">역할변경</th>
+                      </tr>
+                    </thead>
+                    <tbody className="max-h-[400px] overflow-y-auto">
+                      {users.map((user, index) => (
+                        <motion.tr
+                          key={user.id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: index * 0.02 }}
+                          className="border-b hover:bg-gray-50 transition-colors"
+                        >
+                          <td className="px-4 py-3 text-textBrown">
+                            {user.grade ? `${user.grade}` : '-'}
+                          </td>
+                          <td className="px-4 py-3 text-textBrown">
+                            {user.class_number ? `${user.class_number}` : '-'}
+                          </td>
+                          <td className="px-4 py-3 text-textBrown">
+                            {user.student_number ? `${user.student_number}` : '-'}
+                          </td>
+                          <td className="px-4 py-3 font-medium text-textBrown">
+                            {user.name || '이름 없음'}
+                          </td>
+                          <td className="px-4 py-3">
+                            {user.assignedClass ? (
+                              <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs">
+                                {user.assignedClass.name}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400 text-xs">미배정</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getRoleColor(user.role)}`}>
                               {getRoleLabel(user.role)}
                             </span>
-
+                          </td>
+                          <td className="px-4 py-3 text-center">
                             {updating === user.user_id ? (
-                              <div className="text-xs text-gray-500">변경 중...</div>
+                              <span className="text-xs text-gray-500">변경 중...</span>
                             ) : (
                               <select
                                 value={user.role}
@@ -410,11 +415,11 @@ const AdminPanel = ({ onBack }) => {
                                 <option value="admin">관리자</option>
                               </select>
                             )}
-                          </div>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
+                          </td>
+                        </motion.tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>
@@ -785,7 +790,7 @@ const AdminPanel = ({ onBack }) => {
                         </p>
                       </div>
                       <button
-                        onClick={() => handleAddMember(user.id)}
+                        onClick={() => handleAddMember(user.user_id)}
                         className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
                       >
                         <Check size={16} />

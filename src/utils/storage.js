@@ -306,6 +306,7 @@ export const getProfile = async () => {
       startDate: data.start_date || null,
       school: data.school || '',
       classNumber: data.class_number || null,
+      studentNumber: data.student_number || null,
       role: data.role || 'student',
       notificationTime: '20:00',
       notificationEnabled: false
@@ -325,6 +326,7 @@ const getDefaultProfile = () => ({
   startDate: null,
   school: '',
   classNumber: null,
+  studentNumber: null,
   role: 'student',
   notificationTime: '20:00',
   notificationEnabled: false
@@ -370,6 +372,7 @@ export const saveProfile = async (profileData) => {
       school: profileData.school || '',
       grade: profileData.grade || null,
       class_number: profileData.classNumber || null,
+      student_number: profileData.studentNumber || null,
       start_date: profileData.startDate || null,
     };
 
@@ -500,12 +503,30 @@ export const getAllUsers = async () => {
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, user_id, name, school, grade, class_number, role, created_at')
-      .order('created_at', { ascending: false });
+      .select('id, user_id, name, school, grade, class_number, student_number, role, created_at')
+      .order('grade', { ascending: true, nullsFirst: false })
+      .order('class_number', { ascending: true, nullsFirst: false })
+      .order('student_number', { ascending: true, nullsFirst: false });
 
     if (error) throw error;
 
-    return data || [];
+    // 각 사용자의 학급 정보 조회
+    const usersWithClass = await Promise.all(
+      (data || []).map(async (user) => {
+        const { data: membership } = await supabase
+          .from('class_members')
+          .select('classes(id, name)')
+          .eq('user_id', user.user_id)
+          .single();
+
+        return {
+          ...user,
+          assignedClass: membership?.classes || null
+        };
+      })
+    );
+
+    return usersWithClass;
   } catch (error) {
     console.error('사용자 목록 조회 실패:', error);
     return [];

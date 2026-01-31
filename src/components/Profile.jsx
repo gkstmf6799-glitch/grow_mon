@@ -40,6 +40,8 @@ function Profile({ entries, entryCount, onNavigate }) {
     name: '',
     avatar: null,
     grade: null,
+    classNumber: null,
+    studentNumber: null,
     plantName: '',
     plantType: '',
     startDate: null,
@@ -247,26 +249,73 @@ function Profile({ entries, entryCount, onNavigate }) {
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">학년</label>
-                {isEditing ? (
-                  <select
-                    value={editedProfile.grade || ''}
-                    onChange={(e) =>
-                      setEditedProfile({ ...editedProfile, grade: parseInt(e.target.value) })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                  >
-                    <option value="">선택하세요</option>
-                    <option value="4">초등 4학년</option>
-                    <option value="5">초등 5학년</option>
-                    <option value="6">초등 6학년</option>
-                  </select>
-                ) : (
-                  <p className="text-textBrown font-medium">
-                    {profile.grade ? `초등 ${profile.grade}학년` : '학년을 설정해주세요'}
-                  </p>
-                )}
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">학년</label>
+                  {isEditing ? (
+                    <select
+                      value={editedProfile.grade || ''}
+                      onChange={(e) =>
+                        setEditedProfile({ ...editedProfile, grade: parseInt(e.target.value) || null })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      <option value="">선택</option>
+                      <option value="1">1학년</option>
+                      <option value="2">2학년</option>
+                      <option value="3">3학년</option>
+                      <option value="4">4학년</option>
+                      <option value="5">5학년</option>
+                      <option value="6">6학년</option>
+                    </select>
+                  ) : (
+                    <p className="text-textBrown font-medium">
+                      {profile.grade ? `${profile.grade}학년` : '-'}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">반</label>
+                  {isEditing ? (
+                    <input
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={editedProfile.classNumber || ''}
+                      onChange={(e) =>
+                        setEditedProfile({ ...editedProfile, classNumber: parseInt(e.target.value) || null })
+                      }
+                      placeholder="반"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  ) : (
+                    <p className="text-textBrown font-medium">
+                      {profile.classNumber ? `${profile.classNumber}반` : '-'}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">번호</label>
+                  {isEditing ? (
+                    <input
+                      type="number"
+                      min="1"
+                      max="50"
+                      value={editedProfile.studentNumber || ''}
+                      onChange={(e) =>
+                        setEditedProfile({ ...editedProfile, studentNumber: parseInt(e.target.value) || null })
+                      }
+                      placeholder="번호"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  ) : (
+                    <p className="text-textBrown font-medium">
+                      {profile.studentNumber ? `${profile.studentNumber}번` : '-'}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div>
