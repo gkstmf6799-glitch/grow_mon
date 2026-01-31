@@ -135,7 +135,7 @@ const AdminPanel = ({ onBack }) => {
 
       {/* 통계 */}
       <div className="px-4 py-6 max-w-4xl mx-auto">
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-4 gap-3 mb-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -152,6 +152,19 @@ const AdminPanel = ({ onBack }) => {
             transition={{ delay: 0.1 }}
             className="bg-white rounded-xl shadow-md p-4 text-center"
           >
+            <User className="mx-auto mb-2 text-green-500" size={24} />
+            <p className="text-2xl font-bold text-textBrown">
+              {users.filter(u => u.role === 'student').length}
+            </p>
+            <p className="text-xs text-gray-600">학생</p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white rounded-xl shadow-md p-4 text-center"
+          >
             <GraduationCap className="mx-auto mb-2 text-yellow-500" size={24} />
             <p className="text-2xl font-bold text-textBrown">
               {users.filter(u => u.role === 'teacher').length}
@@ -162,7 +175,7 @@ const AdminPanel = ({ onBack }) => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.3 }}
             className="bg-white rounded-xl shadow-md p-4 text-center"
           >
             <Shield className="mx-auto mb-2 text-red-500" size={24} />
